@@ -1,4 +1,3 @@
-
 name: 部署文档
 
 on:
@@ -17,10 +16,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          # 如果你文档需要 Git 子模块，取消注释下一行
-          # submodules: true
-
-
 
       - name: 设置 Node.js
         uses: actions/setup-node@v4
@@ -36,15 +31,24 @@ jobs:
       - name: 构建文档
         env:
           NODE_OPTIONS: --max_old_space_size=8192
-        run: |-
+        run: |
+          # 先执行构建，生成dist目录
           npm run docs:build
-          > src\.vuepress\dist\.nojekyll
+          # Linux环境生成.nojekyll文件（替换Windows的>命令）
+          touch src/.vuepress/dist/.nojekyll
+          # 额外验证：打印dist目录是否存在，方便排查（可选但建议保留）
+          if [ -d "src/.vuepress/dist" ]; then
+            echo "✅ dist目录存在，路径正确"
+            ls -la src/.vuepress/dist/
+          else
+            echo "❌ dist目录不存在"
+            exit 1
+          fi
 
       - name: 部署文档
         uses: JamesIves/github-pages-deploy-action@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
         with:
-          # 部署文档
+          token: ${{ secrets.ACCESS_TOKEN }}
           branch: blog_pages
-          folder: src\.vuepress\dist
+          folder: src/.vuepress/dist  # 仅用Linux识别的/分隔符，指向你的真实目录
+          clean: true  # 清理目标分支旧文件（可选，建议加）
